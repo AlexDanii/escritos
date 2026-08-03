@@ -5,29 +5,39 @@ import Nota from "@/components/Nota";
 import ModalLectura from "@/components/ModalLectura";
 import CrearNotaModal from "@/components/CrearNotaModal";
 
+const NOTAS_INICIALES = [
+  {
+    id: "1",
+    titulo: "Reflexión sobre el tiempo",
+    extracto: "Hoy me puse a pensar en cómo las cosas cambian tan rápido...",
+    contenido: "Hoy me puse a pensar en cómo las cosas cambian tan rápido y a veces no nos damos cuenta. Los días pasan volando entre la universidad, los proyectos y el código. Es importante hacer una pausa de vez en cuando para respirar y escribir lo que sentimos.",
+    fecha: "02 de Agosto, 2026",
+    imagenUrl: null,
+  },
+  {
+    id: "2",
+    titulo: "Atardecer en la ciudad",
+    extracto: "Una foto que tomé el otro día mientras caminaba sin rumbo...",
+    contenido: "Iba caminando al atardecer y los tonos del cielo me hicieron detener totalmente el paso. A veces la inspiración no viene de un gran evento, sino de mirar arriba un segundo.",
+    fecha: "01 de Agosto, 2026",
+    imagenUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
+  },
+];
 
-export default function Home() {
-  const [notaSeleccionada, setNotaSeleccionada] = useState(null);
-  const [modalCrearAbierto, setModalCrearAbierto] = useState(false);
-  const [modoEliminar, setModoEliminar] = useState(false);
-  const [menuAbierto, setMenuAbierto] = useState(false);
-  const [listaDeNotas, setListaDeNotas] = useState([]);
-  const [cargado, setCargado] = useState(false);
-
-  // Cargar notas desde localStorage
-  useEffect(() => {
-    const notasGuardadas = localStorage.getItem("tablero_pensamientos");
-    if (notasGuardadas) {
-      try {
-        setListaDeNotas(JSON.parse(notasGuardadas));
-      } catch (e) {
-        setListaDeNotas(NOTAS_INICIALES);
-      }
-    } else {
-      setListaDeNotas(NOTAS_INICIALES);
+ // Cargar notas desde localStorage
+useEffect(() => {
+  const notasGuardadas = localStorage.getItem("tablero_pensamientos");
+  if (notasGuardadas) {
+    try {
+      setListaDeNotas(JSON.parse(notasGuardadas));
+    } catch (e) {
+      setListaDeNotas([]);
     }
-    setCargado(true);
-  }, []);
+  } else {
+    setListaDeNotas([]);
+  }
+  setCargado(true);
+}, []);
 
   // Guardar en localStorage
   useEffect(() => {
