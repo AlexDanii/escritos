@@ -5,39 +5,28 @@ import Nota from "@/components/Nota";
 import ModalLectura from "@/components/ModalLectura";
 import CrearNotaModal from "@/components/CrearNotaModal";
 
-const NOTAS_INICIALES = [
-  {
-    id: "1",
-    titulo: "Reflexión sobre el tiempo",
-    extracto: "Hoy me puse a pensar en cómo las cosas cambian tan rápido...",
-    contenido: "Hoy me puse a pensar en cómo las cosas cambian tan rápido y a veces no nos damos cuenta. Los días pasan volando entre la universidad, los proyectos y el código. Es importante hacer una pausa de vez en cuando para respirar y escribir lo que sentimos.",
-    fecha: "02 de Agosto, 2026",
-    imagenUrl: null,
-  },
-  {
-    id: "2",
-    titulo: "Atardecer en la ciudad",
-    extracto: "Una foto que tomé el otro día mientras caminaba sin rumbo...",
-    contenido: "Iba caminando al atardecer y los tonos del cielo me hicieron detener totalmente el paso. A veces la inspiración no viene de un gran evento, sino de mirar arriba un segundo.",
-    fecha: "01 de Agosto, 2026",
-    imagenUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
-  },
-];
+export default function Home() {
+  const [notaSeleccionada, setNotaSeleccionada] = useState(null);
+  const [modalCrearAbierto, setModalCrearAbierto] = useState(false);
+  const [modoEliminar, setModoEliminar] = useState(false);
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const [listaDeNotas, setListaDeNotas] = useState([]);
+  const [cargado, setCargado] = useState(false);
 
- // Cargar notas desde localStorage
-useEffect(() => {
-  const notasGuardadas = localStorage.getItem("tablero_pensamientos");
-  if (notasGuardadas) {
-    try {
-      setListaDeNotas(JSON.parse(notasGuardadas));
-    } catch (e) {
+  // Cargar notas desde localStorage
+  useEffect(() => {
+    const notasGuardadas = localStorage.getItem("tablero_pensamientos");
+    if (notasGuardadas) {
+      try {
+        setListaDeNotas(JSON.parse(notasGuardadas));
+      } catch (e) {
+        setListaDeNotas([]);
+      }
+    } else {
       setListaDeNotas([]);
     }
-  } else {
-    setListaDeNotas([]);
-  }
-  setCargado(true);
-}, []);
+    setCargado(true);
+  }, []);
 
   // Guardar en localStorage
   useEffect(() => {
@@ -72,17 +61,23 @@ useEffect(() => {
 
       {/* Tablero estilo corcho */}
       <section className="w-full max-w-5xl min-h-[600px] bg-[#8B5A2B] rounded-2xl p-8 shadow-2xl border-8 border-[#5c3a1b] flex flex-wrap gap-6 items-start">
-        {listaDeNotas.map((nota) => (
-          <Nota
-            key={nota.id}
-            titulo={nota.titulo}
-            extracto={nota.extracto}
-            imagenUrl={nota.imagenUrl}
-            modoEliminar={modoEliminar}
-            alHacerClic={() => setNotaSeleccionada(nota)}
-            alEliminar={() => eliminarNota(nota.id)}
-          />
-        ))}
+        {listaDeNotas.length === 0 ? (
+          <div className="w-full text-center text-[#f2efe9]/70 py-20 italic">
+            El tablero está vacío. Haz clic en el menú (+) para agregar tu primera nota.
+          </div>
+        ) : (
+          listaDeNotas.map((nota) => (
+            <Nota
+              key={nota.id}
+              titulo={nota.titulo}
+              extracto={nota.extracto}
+              imagenUrl={nota.imagenUrl}
+              modoEliminar={modoEliminar}
+              alHacerClic={() => setNotaSeleccionada(nota)}
+              alEliminar={() => eliminarNota(nota.id)}
+            />
+          ))
+        )}
       </section>
 
       {/* Menú Flotante Agrupado */}
