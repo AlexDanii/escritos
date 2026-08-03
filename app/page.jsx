@@ -71,10 +71,10 @@ export default function Home() {
     <main className="min-h-screen bg-[#2c1d11] p-8 flex flex-col items-center relative pb-24">
       <header className="mb-8 text-center">
         <h1 className="text-4xl font-bold text-[#f2efe9] font-serif">
-          Mi Tablero de Pensamientos
+          Escritos
         </h1>
         <p className="text-[#a89f91] italic mt-2">
-          Un espacio personal para reflexiones, ideas y recuerdos.
+          Solo una persona mas queriendo hacer sentido de la vida
         </p>
       </header>
 
