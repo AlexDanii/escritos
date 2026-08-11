@@ -18,7 +18,7 @@ export default function Home() {
   const [modoEliminar, setModoEliminar] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [listaDeNotas, setListaDeNotas] = useState([]);
-  const [cargado, setCargado] = useState(false);
+  const [cargando, setCargando] = useState(true);
   const [usuario, setUsuario] = useState(null);
 
   // 1. Verificar si hay un administrador logueado
@@ -36,36 +36,76 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Cargar notas desde localStorage
-  useEffect(() => {
-    const notasGuardadas = localStorage.getItem("tablero_pensamientos");
-    if (notasGuardadas) {
-      try {
-        setListaDeNotas(JSON.parse(notasGuardadas));
-      } catch (e) {
-        setListaDeNotas([]);
-      }
-    } else {
-      setListaDeNotas([]);
-    }
-    setCargado(true);
-  }, []);
+  // 2. Cargar notas DESDE SUPABASE (Servidor en la nube)
+  const cargarNotas = async () => {
+    setCargando(true);
+    const { data, error } = await supabase
+      .from("notas")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  // Guardar en localStorage
-  useEffect(() => {
-    if (cargado) {
-      localStorage.setItem("tablero_pensamientos", JSON.stringify(listaDeNotas));
+    if (error) {
+      console.error("Error al cargar notas de Supabase:", error.message);
+    } else if (data) {
+      // Mapeamos los nombres de columnas de la BD al formato del componente
+      const notasFormateadas = data.map((n) => ({
+        id: n.id,
+        titulo: n.titulo,
+        extracto: n.extracto,
+        contenido: n.contenido,
+        imagenUrl: n.imagen_url,
+        fecha: n.fecha,
+      }));
+      setListaDeNotas(notasFormateadas);
     }
-  }, [listaDeNotas, cargado]);
-
-  const agregarNota = (nuevaNota) => {
-    setListaDeNotas((prevNotas) => [nuevaNota, ...prevNotas]);
+    setCargando(false);
   };
 
-  const eliminarNota = (id) => {
+  useEffect(() => {
+    cargarNotas();
+  }, []);
+
+  // 3. Guardar nota EN SUPABASE
+  const agregarNota = async (nuevaNota) => {
+    const { data, error } = await supabase
+      .from("notas")
+      .insert([
+        {
+          titulo: nuevaNota.titulo,
+          extracto: nuevaNota.extracto,
+          contenido: nuevaNota.contenido,
+          imagen_url: nuevaNota.imagenUrl,
+          fecha: nuevaNota.fecha,
+        },
+      ])
+      .select();
+
+    if (error) {
+      alert("Error al guardar en Supabase: " + error.message);
+    } else if (data && data.length > 0) {
+      const notaGuardada = {
+        id: data[0].id,
+        titulo: data[0].titulo,
+        extracto: data[0].extracto,
+        contenido: data[0].contenido,
+        imagenUrl: data[0].imagen_url,
+        fecha: data[0].fecha,
+      };
+      setListaDeNotas((prev) => [notaGuardada, ...prev]);
+    }
+  };
+
+  // 4. Eliminar nota EN SUPABASE
+  const eliminarNota = async (id) => {
     const confirmacion = window.confirm("¿Estás seguro de que deseas eliminar esta nota?");
-    if (confirmacion) {
-      setListaDeNotas((prevNotas) => prevNotas.filter((nota) => nota.id !== id));
+    if (!confirmacion) return;
+
+    const { error } = await supabase.from("notas").delete().eq("id", id);
+
+    if (error) {
+      alert("Error al eliminar nota de Supabase: " + error.message);
+    } else {
+      setListaDeNotas((prev) => prev.filter((nota) => nota.id !== id));
     }
   };
 
@@ -73,11 +113,17 @@ export default function Home() {
     await supabase.auth.signOut();
   };
 
-  if (!cargado) return null;
+  if (cargando) {
+    return (
+      <main className="min-h-screen bg-[#2c1d11] flex items-center justify-center text-[#f2efe9] font-serif">
+        Cargando escritos...
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#2c1d11] p-8 flex flex-col items-center relative pb-24">
-      {/* Botón de Login/Logout discreto en la esquina superior */}
+      {/* Botón de Login/Logout discreto */}
       <div className="absolute top-4 right-4 z-10">
         {usuario ? (
           <button
@@ -118,7 +164,7 @@ export default function Home() {
               titulo={nota.titulo}
               extracto={nota.extracto}
               imagenUrl={nota.imagenUrl}
-              modoEliminar={usuario && modoEliminar} // Solo permite eliminar si es usuario autenticado
+              modoEliminar={usuario && modoEliminar}
               alHacerClic={() => setNotaSeleccionada(nota)}
               alEliminar={() => eliminarNota(nota.id)}
             />
@@ -126,13 +172,11 @@ export default function Home() {
         )}
       </section>
 
-      {/* Menú Flotante Agrupado: SOLO VISIBLE SI HAY USUARIO AUTENTICADO */}
+      {/* Menú Flotante Agrupado: SOLO VISIBLE SI ESTÁS LOGUEADO */}
       {usuario && (
         <div className="fixed bottom-8 right-8 flex flex-col items-end gap-3 z-40">
-          {/* Opciones desplegadas */}
           {menuAbierto && (
             <div className="flex flex-col gap-2 items-end mb-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
-              {/* Opción 1: Crear Nota */}
               <button
                 onClick={() => {
                   setModalCrearAbierto(true);
@@ -143,7 +187,6 @@ export default function Home() {
                 <span>✍️ Nueva Nota</span>
               </button>
 
-              {/* Opción 2: Toggle Eliminar */}
               <button
                 onClick={() => {
                   setModoEliminar(!modoEliminar);
@@ -160,7 +203,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Botón Principal (Toggle del menú) */}
           <button
             onClick={() => setMenuAbierto(!menuAbierto)}
             className={`font-serif font-bold text-2xl w-14 h-14 rounded-full shadow-2xl border-2 border-[#2b2927] flex items-center justify-center transition-all ${
